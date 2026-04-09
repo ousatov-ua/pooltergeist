@@ -9,12 +9,10 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingDeque;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
-import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -71,6 +69,18 @@ public class TaskManager<T extends WorkUnit, R> implements Closeable {
         TimeUnit.MINUTES);
     this.taskManagerExecutor = Executors.newFixedThreadPool(1);
     this.taskManagerExecutor.execute(this::dispatch);
+  }
+
+  private static void shutdownAndAwait(
+      ExecutorService executor, boolean now, long timeout, TimeUnit unit, String name)
+      throws InterruptedException {
+    if (now) {
+      executor.shutdownNow();
+    } else {
+      executor.shutdown();
+    }
+    boolean terminated = executor.awaitTermination(timeout, unit);
+    log.info("{} is terminated={}", name, terminated);
   }
 
   @SuppressWarnings("java:S135")
@@ -174,49 +184,6 @@ public class TaskManager<T extends WorkUnit, R> implements Closeable {
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
       throw new IOException("Cannot close resources", e);
-    }
-  }
-
-  private static void shutdownAndAwait(
-      ExecutorService executor, boolean now, long timeout, TimeUnit unit, String name)
-      throws InterruptedException {
-    if (now) {
-      executor.shutdownNow();
-    } else {
-      executor.shutdown();
-    }
-    boolean terminated = executor.awaitTermination(timeout, unit);
-    log.info("{} is terminated={}", name, terminated);
-  }
-
-  /**
-   * Blocking queue that converts {@link #offer} into a blocking {@link #put} call. This causes
-   * {@link ThreadPoolExecutor} to apply backpressure when the queue is full rather than invoking
-   * the rejection handler.
-   *
-   * <p><strong>Note</strong>: this overrides the standard {@code offer} contract (non-blocking,
-   * returns {@code false} when full). Only use this queue with {@link ThreadPoolExecutor} where the
-   * blocking-offer backpressure behavior is explicitly desired.
-   *
-   * @param <E> element type
-   * @author Oleksii Usatov
-   */
-  private static class LimitedQueue<E> extends LinkedBlockingQueue<E> {
-
-    public LimitedQueue(int maxSize) {
-      super(maxSize);
-    }
-
-    @Override
-    public boolean offer(@NonNull E e) {
-      // Turn offer() and add() into a blocking call for backpressure
-      try {
-        put(e);
-        return true;
-      } catch (InterruptedException _) {
-        Thread.currentThread().interrupt();
-      }
-      return false;
     }
   }
 }

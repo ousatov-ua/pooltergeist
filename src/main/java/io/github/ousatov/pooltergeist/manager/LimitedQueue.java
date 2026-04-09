@@ -1,12 +1,19 @@
 package io.github.ousatov.pooltergeist.manager;
 
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
 import lombok.NonNull;
 
 /**
- * Needed for ThreadPoolExecutor Limited queue: executor will wait to submit runnable if the queue
- * is full
+ * Blocking queue that converts {@link #offer} into a blocking {@link #put} call. This causes {@link
+ * ThreadPoolExecutor} to apply backpressure when the queue is full rather than invoking the
+ * rejection handler.
  *
+ * <p><strong>Note</strong>: this overrides the standard {@code offer} contract (non-blocking,
+ * returns {@code false} when full). Only use this queue with {@link ThreadPoolExecutor} where the
+ * blocking-offer backpressure behavior is explicitly desired.
+ *
+ * @param <E> element type
  * @author Oleksii Usatov
  */
 class LimitedQueue<E> extends LinkedBlockingQueue<E> {
