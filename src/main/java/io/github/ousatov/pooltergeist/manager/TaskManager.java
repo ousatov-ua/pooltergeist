@@ -120,7 +120,7 @@ public class TaskManager<T extends WorkUnit, R> implements Closeable {
 
   /**
    * Enqueues the sentinel, waits for the dispatch loop to finish, then shuts down the processor
-   *  pool and waits for all in-flight tasks to complete.
+   * pool and waits for all in-flight tasks to complete.
    *
    * @param lastWorkUnit sentinel produced by {@link WorkUnit#getLastWorkUnit()}
    */
