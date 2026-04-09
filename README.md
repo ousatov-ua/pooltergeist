@@ -7,6 +7,8 @@
 [![GitHub commits](https://img.shields.io/github/commit-activity/t/ousatov-ua/pooltergeist)](https://github.com/ousatov-ua/pooltergeist/commits/main)
 [![GitHub last commit](https://img.shields.io/github/last-commit/ousatov-ua/pooltergeist)](https://github.com/ousatov-ua/pooltergeist/commits/main)
 
+![img](https://raw.githubusercontent.com/ousatov-ua/pooltergeist/refs/heads/main/img/pooltergeist_1920x960.png)
+
 > A Java 25+ multithreading utility library that brings order to the chaos of thread pool management.
 
 Pooltergeist separates CPU-bound, IO-bound, and virtual-thread work into purpose-built executor pools, adds bounded-concurrency backpressure via a bulkhead, and provides a high-throughput `TaskManager` for fan-out processing pipelines — all wired up and ready to use in three lines of code.
