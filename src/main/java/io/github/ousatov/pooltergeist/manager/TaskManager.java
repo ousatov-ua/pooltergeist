@@ -5,24 +5,31 @@ import io.github.ousatov.pooltergeist.vo.config.TaskManagerConfig;
 import io.github.ousatov.pooltergeist.vo.manager.WorkUnit;
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * TaskManager
+ * Manages processing of all units of work. Built on the base of a limited queue.
  *
- * <p>Manages processing of all units of work. Built on the base of a limited queue.
+ * <p>Submit work items via {@link #submit}, then call {@link #waitForCompletion} with the sentinel
+ * instance to block until all submitted work is processed.
  *
+ * @param <T> work unit type — must implement {@link WorkUnit}
+ * @param <R> result type returned by the processing function
  * @author Oleksii Usatov
  */
 @Slf4j
 public class TaskManager<T extends WorkUnit, R> implements Closeable {
+
   private final TaskManagerConfig config;
   private final LinkedBlockingDeque<T> workUnitsDeque;
   private final LimitedQueue<Runnable> tasksDeque;
@@ -31,8 +38,15 @@ public class TaskManager<T extends WorkUnit, R> implements Closeable {
   private final ScheduledExecutorService statusExecutor;
   private final ExecutorService taskManagerExecutor;
   private final StatTracker stats;
+  private final CountDownLatch dispatchDone = new CountDownLatch(1);
   private volatile boolean finished;
 
+  /**
+   * Creates and starts the task manager.
+   *
+   * @param config tuning parameters
+   * @param function processing function applied to each work unit
+   */
   public TaskManager(TaskManagerConfig config, Function<T, R> function) {
     this.config = config;
     this.function = function;
@@ -61,73 +75,81 @@ public class TaskManager<T extends WorkUnit, R> implements Closeable {
 
   @SuppressWarnings("java:S135")
   private void dispatch() {
-    while (true) {
-      T workUnit = null;
-      try {
-        workUnit = workUnitsDeque.take();
-        if (workUnit == workUnit.getLastWorkUnit()) {
-          log.info("Last task is reached, workUnitsDeque is empty={}", workUnitsDeque.isEmpty());
-          finished = true;
+    try {
+      while (true) {
+        T workUnit = null;
+        try {
+          workUnit = workUnitsDeque.take();
+          if (workUnit == workUnit.getLastWorkUnit()) {
+            log.info("Last task is reached, workUnitsDeque is empty={}", workUnitsDeque.isEmpty());
+            finished = true;
+            break;
+          }
+          final var finalWorkUnit = workUnit;
+          processorsPool.submit(
+              () -> recordStatistics(finalWorkUnit, function.apply(finalWorkUnit)));
+        } catch (InterruptedException ie) {
+          Thread.currentThread().interrupt();
+          log.error("Dispatch interrupted", ie);
           break;
+        } catch (Exception e) {
+          log.error("Could not process workUnit={}", workUnit, e);
         }
-        final var finalWorkUnit = workUnit;
-        processorsPool.submit(() -> recordStatistics(finalWorkUnit, function.apply(finalWorkUnit)));
-      } catch (InterruptedException ie) {
-        Thread.currentThread().interrupt();
-        log.error("Dispatch interrupted", ie);
-        break;
-      } catch (Exception e) {
-        log.error("Could not process workUnit={}", workUnit, e);
       }
+    } finally {
+      dispatchDone.countDown();
     }
   }
 
   /**
-   * @return true when the dispatch loop and all task queues are drained
+   * @return true when the dispatch loop has exited and the processor pool has terminated
    */
   public boolean isFinished() {
-    return finished && workUnitsDeque.isEmpty() && tasksDeque.isEmpty();
+    return finished && processorsPool.isTerminated();
   }
 
   /**
-   * Submit a task
+   * Submits a work unit for processing.
    *
    * @param workUnit T
-   * @throws InterruptedException exception
+   * @throws InterruptedException if the calling thread is interrupted while waiting for queue space
    */
   public void submit(T workUnit) throws InterruptedException {
     workUnitsDeque.put(workUnit);
   }
 
   /**
-   * Put the last value to the queue and wait for all submitted tasks to finish.
+   * Enqueues the sentinel, waits for the dispatch loop to finish, then shuts down the processor
+   *  pool and waits for all in-flight tasks to complete.
    *
-   * @param lastWorkUnit last unit of work
+   * @param lastWorkUnit sentinel produced by {@link WorkUnit#getLastWorkUnit()}
    */
   public void waitForCompletion(T lastWorkUnit) {
     try {
       workUnitsDeque.put(lastWorkUnit);
-      while (!isFinished()) {
-        log.info("Waiting for all tasks left the queue");
-        TimeUnit.SECONDS.sleep(config.getWaitTimeForCheckingFinishedSeconds());
-      }
-      log.info("All tasks are executed");
-    } catch (Exception ine) {
+      dispatchDone.await();
+      log.info("Dispatch finished, draining processor pool...");
+      processorsPool.shutdown();
+      boolean terminated =
+          processorsPool.awaitTermination(
+              config.getWaitTimeForAllTasksFinishedMinute(), TimeUnit.MINUTES);
+      log.info("All tasks are executed, terminated={}", terminated);
+    } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
-      log.error("Exception during finishing", ine);
+      log.error("Exception during finishing", e);
     }
   }
 
-  /** Log statistics */
+  /** Logs processing statistics collected so far. */
   public void logStatistics() {
     stats.logSummary();
   }
 
   /**
-   * Check if processing was marked as failed
+   * Override to mark a result as an error for statistics purposes.
    *
    * @param result R
-   * @return true if is in the error state
+   * @return true if the result represents a processing error
    */
   protected boolean isInError(R result) {
     return false;
@@ -140,24 +162,61 @@ public class TaskManager<T extends WorkUnit, R> implements Closeable {
   @Override
   public void close() throws IOException {
     try {
-      log.info("Waiting for all submitted tasks finished");
-      processorsPool.shutdown();
-      var terminated =
-          processorsPool.awaitTermination(
-              config.getWaitTimeForAllTasksFinishedMinute(), TimeUnit.MINUTES);
-      log.info("ProcessorsPool is terminated={}", terminated);
-      log.info("All submitted tasks finished");
-      statusExecutor.shutdownNow();
-      terminated = statusExecutor.awaitTermination(1, TimeUnit.MINUTES);
-      log.info("StatusExecutor is finished={}", terminated);
-      log.info("All tasks left the queue");
-      log.info("Shutdown taskManager...");
-      taskManagerExecutor.shutdownNow();
-      terminated = taskManagerExecutor.awaitTermination(1, TimeUnit.MINUTES);
-      log.info("Task manager is terminated={}", terminated);
+      log.info("Closing task manager...");
+      shutdownAndAwait(
+          processorsPool,
+          false,
+          config.getWaitTimeForAllTasksFinishedMinute(),
+          TimeUnit.MINUTES,
+          "ProcessorsPool");
+      shutdownAndAwait(statusExecutor, true, 1, TimeUnit.MINUTES, "StatusExecutor");
+      shutdownAndAwait(taskManagerExecutor, true, 1, TimeUnit.MINUTES, "TaskManagerExecutor");
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
       throw new IOException("Cannot close resources", e);
+    }
+  }
+
+  private static void shutdownAndAwait(
+      ExecutorService executor, boolean now, long timeout, TimeUnit unit, String name)
+      throws InterruptedException {
+    if (now) {
+      executor.shutdownNow();
+    } else {
+      executor.shutdown();
+    }
+    boolean terminated = executor.awaitTermination(timeout, unit);
+    log.info("{} is terminated={}", name, terminated);
+  }
+
+  /**
+   * Blocking queue that converts {@link #offer} into a blocking {@link #put} call. This causes
+   * {@link ThreadPoolExecutor} to apply backpressure when the queue is full rather than invoking
+   * the rejection handler.
+   *
+   * <p><strong>Note</strong>: this overrides the standard {@code offer} contract (non-blocking,
+   * returns {@code false} when full). Only use this queue with {@link ThreadPoolExecutor} where the
+   * blocking-offer backpressure behavior is explicitly desired.
+   *
+   * @param <E> element type
+   * @author Oleksii Usatov
+   */
+  private static class LimitedQueue<E> extends LinkedBlockingQueue<E> {
+
+    public LimitedQueue(int maxSize) {
+      super(maxSize);
+    }
+
+    @Override
+    public boolean offer(@NonNull E e) {
+      // Turn offer() and add() into a blocking call for backpressure
+      try {
+        put(e);
+        return true;
+      } catch (InterruptedException _) {
+        Thread.currentThread().interrupt();
+      }
+      return false;
     }
   }
 }

@@ -5,29 +5,29 @@ import io.github.ousatov.pooltergeist.hub.executor.IoExecutor;
 import io.github.ousatov.pooltergeist.hub.executor.ManagedExecutor;
 import io.github.ousatov.pooltergeist.hub.executor.VirtualExecutor;
 import io.github.ousatov.pooltergeist.vo.config.ExecHubConfig;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Manages executor pools for parallel task execution. Provides IO-bound, CPU-bound, Virtual threads
- * executors.
+ * Manages executor pools for parallel task execution. Provides IO-bound and CPU-bound executors
+ * with context propagation.
  *
  * @author Oleksii Usatov
  */
 @Slf4j
 public class ExecutorHub {
 
-  /** Maximum timeout in seconds for pool termination. */
   private final ExecHubConfig config;
 
-  /** Virtual threads */
+  /** Virtual threads (Attic). */
   @Getter private final VirtualExecutor attic;
 
-  /** Cpu bound work */
+  /** CPU-bound work (Ballroom). */
   @Getter private final CpuExecutor ballroom;
 
-  /** IO bound work */
+  /** IO-bound work (Dungeon). */
   @Getter private final IoExecutor dungeon;
 
   /**
@@ -42,6 +42,14 @@ public class ExecutorHub {
     this.dungeon = new IoExecutor(config);
   }
 
+  /**
+   * Creates an ExecutorHub with pre-constructed executors (useful for testing).
+   *
+   * @param config application configuration
+   * @param attic virtual executor
+   * @param ballroom cpu executor
+   * @param dungeon io executor
+   */
   public ExecutorHub(
       ExecHubConfig config, VirtualExecutor attic, CpuExecutor ballroom, IoExecutor dungeon) {
     this.config = config;
@@ -50,11 +58,6 @@ public class ExecutorHub {
     this.dungeon = dungeon;
   }
 
-  /**
-   * ShutdownNow pool
-   *
-   * @param chamber {@link ManagedExecutor}
-   */
   private static void shutdownNow(ManagedExecutor chamber) {
     var executorService = chamber.getExecutorService();
     if (executorService != null) {
@@ -62,29 +65,31 @@ public class ExecutorHub {
     }
   }
 
-  /** Shuts down all executor pools gracefully on application context destruction. */
+  /**
+   * Shuts down all executor pools. All pools receive {@code shutdownNow} first so they wind down
+   * concurrently, then each is awaited in turn.
+   */
   public void close() {
-
     log.info("Going to shutdown executors...");
-    close(attic);
-    close(ballroom);
-    close(dungeon);
+    List<ManagedExecutor> executors = List.of(attic, ballroom, dungeon);
+    for (ManagedExecutor e : executors) {
+      if (e == null) {
+        continue;
+      }
+      log.info("Shutdown issued for {}", e.getName());
+      shutdownNow(e);
+    }
+    for (ManagedExecutor e : executors) {
+      if (e == null) {
+        continue;
+      }
+      log.info("Waiting for {} to be shutdown...", e.getName());
+      awaitTermination(e);
+      log.info("{} is shutdown.", e.getName());
+    }
     log.info("Executors are shutdown.");
   }
 
-  private void close(ManagedExecutor managedExecutor) {
-    log.info("Going to shutdown {}...", managedExecutor.getName());
-    shutdownNow(managedExecutor);
-    log.info("Waiting for {} to be shutdown...", managedExecutor.getName());
-    awaitTermination(managedExecutor);
-    log.info("{} is shutdown.", managedExecutor.getName());
-  }
-
-  /**
-   * Wait for termination
-   *
-   * @param executor {@link ManagedExecutor}
-   */
   private void awaitTermination(ManagedExecutor executor) {
     var executorService = executor.getExecutorService();
     try {
@@ -102,27 +107,27 @@ public class ExecutorHub {
   }
 
   /**
-   * For regular naming virtual threads executor :)
+   * Returns the virtual-thread executor.
    *
-   * @return @{@link VirtualExecutor}
+   * @return {@link VirtualExecutor}
    */
   public VirtualExecutor virtual() {
     return attic;
   }
 
   /**
-   * For regular naming cpu threads executor :)
+   * Returns the CPU-bound executor.
    *
-   * @return @{@link CpuExecutor}
+   * @return {@link CpuExecutor}
    */
   public CpuExecutor cpu() {
     return ballroom;
   }
 
   /**
-   * For regular naming io threads executor :)
+   * Returns the IO-bound executor.
    *
-   * @return @{@link CpuExecutor}
+   * @return {@link IoExecutor}
    */
   public IoExecutor io() {
     return dungeon;

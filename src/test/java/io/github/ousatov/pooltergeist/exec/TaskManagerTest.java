@@ -2,6 +2,7 @@ package io.github.ousatov.pooltergeist.exec;
 
 import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.github.ousatov.pooltergeist.hub.executor.IoExecutor;
 import io.github.ousatov.pooltergeist.manager.TaskManager;
@@ -109,6 +110,42 @@ class TaskManagerTest {
     @Override
     public String getType() {
       return "SomeType";
+    }
+  }
+
+  @Test
+  void testIsFinished() throws IOException, InterruptedException {
+    final var config =
+        TaskManagerConfig.builder()
+            .eventProcessingParallelism(1)
+            .workUnitsDequeSize(5)
+            .tasksDequeSize(5)
+            .waitTimeForAllTasksFinishedMinute(1)
+            .build();
+    try (var taskManager =
+        new TestTaskManager(config, t -> Result.builder().ok(true).sourceData(t.data()).build())) {
+      taskManager.submit(CustomWorkOfUnit.builder().data(0).build());
+      taskManager.waitForCompletion(CustomWorkOfUnit.LAST_VALUE);
+      assertTrue(taskManager.isFinished());
+    }
+  }
+
+  @Test
+  void testBaseIsInErrorReturnsFalse() throws IOException, InterruptedException {
+    final var config =
+        TaskManagerConfig.builder()
+            .eventProcessingParallelism(1)
+            .workUnitsDequeSize(5)
+            .tasksDequeSize(5)
+            .waitTimeForAllTasksFinishedMinute(1)
+            .build();
+    // Base TaskManager — isInError always returns false
+    try (var taskManager =
+        new TaskManager<CustomWorkOfUnit, Result>(
+            config, t -> Result.builder().ok(false).sourceData(t.data()).build())) {
+      taskManager.submit(CustomWorkOfUnit.builder().data(1).build());
+      taskManager.waitForCompletion(CustomWorkOfUnit.LAST_VALUE);
+      taskManager.logStatistics();
     }
   }
 

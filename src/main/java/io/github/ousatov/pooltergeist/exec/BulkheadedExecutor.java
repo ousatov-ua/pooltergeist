@@ -1,5 +1,6 @@
 package io.github.ousatov.pooltergeist.exec;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
@@ -22,11 +23,12 @@ import org.jspecify.annotations.NonNull;
  * ExecutorService that runs tasks on virtual threads but limits in-flight concurrency using
  * semaphore.
  *
- * <p>- Never rejects due to saturation (it waits for a permit).
- *
- * <p>- Max in-flight is enforced across execute/submit/invokeAll/invokeAny.
- *
- * <p>
+ * <ul>
+ *   <li>Never rejects due to saturation — it waits for a permit.
+ *   <li>Max in-flight is enforced across execute/submit/invokeAll/invokeAny.
+ *   <li>{@link #getWaiting()} is an approximation; it may transiently over-count due to the
+ *       inherent race between checking available permits and acquiring one.
+ * </ul>
  *
  * @author Oleksii Usatov
  */
@@ -42,10 +44,22 @@ public final class BulkheadedExecutor extends AbstractExecutorService {
   private final Semaphore permits;
   private volatile boolean shutdown;
 
+  /**
+   * Creates a bulkheaded executor backed by a virtual-thread-per-task executor.
+   *
+   * @param maxInFlight maximum number of concurrently running tasks
+   */
   public BulkheadedExecutor(int maxInFlight) {
     this(Executors.newVirtualThreadPerTaskExecutor(), maxInFlight, false);
   }
 
+  /**
+   * Creates a bulkheaded executor with an explicit delegate and fairness setting.
+   *
+   * @param delegate backing executor
+   * @param maxInFlight maximum number of concurrently running tasks
+   * @param fair whether the semaphore uses a fair ordering policy
+   */
   public BulkheadedExecutor(ExecutorService delegate, int maxInFlight, boolean fair) {
     if (maxInFlight <= 0) {
       throw new IllegalArgumentException("maxInFlight must be > 0");
@@ -55,38 +69,54 @@ public final class BulkheadedExecutor extends AbstractExecutorService {
     this.maxInFlight = maxInFlight;
   }
 
+  /**
+   * @return current number of tasks actively running
+   */
   public int getInFlight() {
     return inFlight.get();
   }
 
+  /**
+   * @return approximate number of threads blocked waiting for a permit; may transiently over-count
+   */
   public int getWaiting() {
     return waiting.get();
   }
 
+  /**
+   * @return sum of in-flight count and available permits (should equal {@code maxInFlight})
+   */
   public int getMaxAvailableInFlight() {
     return inFlight.get() + permits.availablePermits();
   }
 
+  /**
+   * @return number of currently available permits
+   */
   public int getAvailablePermits() {
     return permits.availablePermits();
   }
 
+  /**
+   * @return total number of tasks submitted since creation
+   */
   public long getSubmitted() {
     return submitted.sum();
   }
 
+  /**
+   * @return total number of tasks that completed (successfully or with exception)
+   */
   public long getCompleted() {
     return completed.sum();
   }
 
   @Override
   public void execute(@NonNull Runnable command) {
-    if (isShutdown()) {
-      throw new RejectedExecutionException("ExecutorService is shutdown");
-    }
+    ensureNotShutdown();
     submitted.increment();
 
-    // Backpressure: if no permits, we are waiting
+    // Approximate waiting counter — may transiently over-count (documented in class Javadoc)
     boolean countedWaiting = false;
     if (permits.availablePermits() == 0) {
       waiting.incrementAndGet();
@@ -111,8 +141,8 @@ public final class BulkheadedExecutor extends AbstractExecutorService {
             }
           });
     } catch (Exception e) {
+      // Delegate rejected the task — release resources but do NOT count as completed
       inFlight.decrementAndGet();
-      completed.increment();
       permits.release();
       throw e;
     }
@@ -138,6 +168,14 @@ public final class BulkheadedExecutor extends AbstractExecutorService {
         permits.release();
       }
     };
+  }
+
+  private <T> List<Callable<T>> wrapAll(Collection<? extends Callable<T>> tasks) {
+    List<Callable<T>> wrapped = new ArrayList<>(tasks.size());
+    for (Callable<T> task : tasks) {
+      wrapped.add(wrap(task));
+    }
+    return wrapped;
   }
 
   @Override
@@ -166,8 +204,7 @@ public final class BulkheadedExecutor extends AbstractExecutorService {
       throws InterruptedException {
     Objects.requireNonNull(tasks, TASKS_ARE_NULL);
     ensureNotShutdown();
-    var wrapped = tasks.stream().map(this::wrap).toList();
-    return delegate.invokeAll(wrapped);
+    return delegate.invokeAll(wrapAll(tasks));
   }
 
   @Override
@@ -176,8 +213,7 @@ public final class BulkheadedExecutor extends AbstractExecutorService {
       throws InterruptedException {
     Objects.requireNonNull(tasks, TASKS_ARE_NULL);
     ensureNotShutdown();
-    var wrapped = tasks.stream().map(this::wrap).toList();
-    return delegate.invokeAll(wrapped, timeout, unit);
+    return delegate.invokeAll(wrapAll(tasks), timeout, unit);
   }
 
   @Override
@@ -185,8 +221,7 @@ public final class BulkheadedExecutor extends AbstractExecutorService {
       throws InterruptedException, ExecutionException {
     Objects.requireNonNull(tasks, "tasks");
     ensureNotShutdown();
-    var wrapped = tasks.stream().map(this::wrap).toList();
-    return delegate.invokeAny(wrapped);
+    return delegate.invokeAny(wrapAll(tasks));
   }
 
   @Override
@@ -195,8 +230,7 @@ public final class BulkheadedExecutor extends AbstractExecutorService {
       throws InterruptedException, ExecutionException, TimeoutException {
     Objects.requireNonNull(tasks, "tasks");
     ensureNotShutdown();
-    var wrapped = tasks.stream().map(this::wrap).toList();
-    return delegate.invokeAny(wrapped, timeout, unit);
+    return delegate.invokeAny(wrapAll(tasks), timeout, unit);
   }
 
   @Override

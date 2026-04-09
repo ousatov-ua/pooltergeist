@@ -6,7 +6,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.function.IntFunction;
@@ -17,7 +16,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Common functionality for all rooms
+ * Common functionality for all executor rooms.
  *
  * @author Oleksii Usatov
  * @since 09.04.2026
@@ -29,74 +28,85 @@ public abstract class ManagedExecutor {
   @Getter protected final ExecutorService executorService;
 
   /**
-   * Wait for all futures
+   * Waits for all futures and returns their results in the original order.
    *
-   * @param futures list of {@link Future}
-   * @param <T> type returned
-   * @return result
+   * @param futures list of futures to join
+   * @param <T> result type
+   * @return ordered list of results
    */
   public static <T> List<T> join(List<CompletableFuture<T>> futures) {
-    Stopwatch stopwatch = Stopwatch.createStarted();
+    Stopwatch stopwatch = log.isDebugEnabled() ? Stopwatch.createStarted() : null;
     try {
-      CompletableFuture.allOf(futures.toArray(CompletableFuture[]::new)).join();
-      var result = new ArrayList<T>(futures.size());
-      for (var f : futures) {
+      CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+      List<T> result = new ArrayList<>(futures.size());
+      for (CompletableFuture<T> f : futures) {
         result.add(f.join()); // non-blocking — future is already done
       }
       return result;
     } finally {
-      log.debug(
-          "Join for size={} in {} ms",
-          futures.size(),
-          stopwatch.stop().elapsed(TimeUnit.MILLISECONDS));
+      if (stopwatch != null) {
+        log.debug(
+            "Join for size={} in {} ms",
+            futures.size(),
+            stopwatch.stop().elapsed(TimeUnit.MILLISECONDS));
+      }
     }
   }
 
   /**
-   * Wait for all futures
+   * Waits for all futures and returns their results as an array.
    *
-   * @param futures list of {@link Future}
-   * @param <T> type returned
-   * @return result
+   * @param futures array of futures
+   * @param arrayFactory array constructor (e.g. {@code String[]::new})
+   * @param <T> result type
+   * @return ordered array of results
    */
   public static <T> T[] join(CompletableFuture<T>[] futures, IntFunction<T[]> arrayFactory) {
-    Stopwatch stopwatch = Stopwatch.createStarted();
+    Stopwatch stopwatch = log.isDebugEnabled() ? Stopwatch.createStarted() : null;
     try {
-      CompletableFuture.allOf(futures).join(); // wait for all to complete
+      CompletableFuture.allOf(futures).join();
       T[] result = arrayFactory.apply(futures.length);
-      for (int i = 0; i < futures.length; i++) { // preserve original order
+      for (int i = 0; i < futures.length; i++) {
         result[i] = futures[i].join();
       }
       return result;
     } finally {
-      log.debug(
-          "Join for size={} in {} ms",
-          futures.length,
-          stopwatch.stop().elapsed(TimeUnit.MILLISECONDS));
+      if (stopwatch != null) {
+        log.debug(
+            "Join for size={} in {} ms",
+            futures.length,
+            stopwatch.stop().elapsed(TimeUnit.MILLISECONDS));
+      }
     }
   }
 
   /**
-   * Execute in parallel mode
+   * Executes all suppliers in parallel and blocks until all complete.
    *
-   * @param functions functions to apply
-   * @param <T> Input type
+   * @param functions tasks to execute
+   * @param <T> result type
    */
   public <T> void executeTasksBlocking(List<Supplier<T>> functions) {
     if (functions.isEmpty()) {
       return;
     }
-    join(functions.stream().map(this::submitTasks).toList());
+    List<CompletableFuture<T>> futures = new ArrayList<>(functions.size());
+    for (Supplier<T> s : functions) {
+      futures.add(submitTasks(s));
+    }
+    join(futures);
   }
 
   /**
-   * Execute in parallel mode and wait for all tasks finished
+   * Maps each element in {@code stream} to a task, runs all in parallel, and returns results as an
+   * array.
    *
-   * @param arrayFactory array function
-   * @param fn function to apply
-   * @param <T> Return type
-   * @param <W> Provided type
-   * @return result
+   * @param stream input stream
+   * @param fn mapping function
+   * @param arrayFactory array constructor
+   * @param <T> return type
+   * @param <W> input type
+   * @return ordered array of results
    */
   @SuppressWarnings({"unchecked", "unused"})
   public <T, W> T[] executeTasksBlocking(
@@ -105,53 +115,60 @@ public abstract class ManagedExecutor {
         stream
             .sequential()
             .map(d -> submitTasks(() -> fn.apply(d)))
-            .toArray((int n) -> (CompletableFuture<T>[]) new CompletableFuture<?>[n]); // safe-ish
+            .toArray((int n) -> (CompletableFuture<T>[]) new CompletableFuture<?>[n]);
     return join(futures, arrayFactory);
   }
 
   /**
-   * Return List for stream
+   * Maps each element in {@code data} to a task, runs all in parallel, and blocks until all
+   * complete.
    *
-   * @param data stream
-   * @param fn function
-   * @param <T> Return type
-   * @param <W> Provided type
-   * @return list of results
+   * @param data input collection
+   * @param fn mapping function
+   * @param <T> return type
+   * @param <W> input type
+   * @return list of results in encounter order
    */
   public <T, W> List<T> executeTasksBlocking(Collection<W> data, Function<W, T> fn) {
-    List<CompletableFuture<T>> futures =
-        data.stream().map(w -> submitTasks(() -> fn.apply(w))).toList();
+    List<CompletableFuture<T>> futures = new ArrayList<>(data.size());
+    for (W w : data) {
+      futures.add(submitTasks(() -> fn.apply(w)));
+    }
     return join(futures);
   }
 
   /**
-   * Execute in parallel mode WITHOUT JOIN
+   * Maps each element in {@code data} to a task and submits all without waiting for completion.
    *
-   * @param data data
-   * @param function function to apply
-   * @param <T> Return type
-   * @param <W> Provided type
-   * @return List of futures
+   * @param data input collection
+   * @param function mapping function
+   * @param <T> return type
+   * @param <W> input type
+   * @return list of futures (not yet joined)
    */
   @SuppressWarnings("unused")
   public <T, W> List<CompletableFuture<T>> executeTasks(
       Collection<W> data, Function<W, T> function) {
-    return data.stream().map(d -> submitTasks(() -> function.apply(d))).toList();
+    List<CompletableFuture<T>> futures = new ArrayList<>(data.size());
+    for (W d : data) {
+      futures.add(submitTasks(() -> function.apply(d)));
+    }
+    return futures;
   }
 
   /**
-   * Submit a task
+   * Submits a single task asynchronously.
    *
    * @param supplier task
-   * @param <T> type
-   * @return Future
+   * @param <T> result type
+   * @return future representing the pending result
    */
   public <T> CompletableFuture<T> submitTasks(Supplier<T> supplier) {
     return CompletableFuture.supplyAsync(supplier, executorService);
   }
 
   /**
-   * Generates status information string for the given executor.
+   * Returns a status string describing the current executor state.
    *
    * @return formatted status string with pool metrics
    */
@@ -159,5 +176,8 @@ public abstract class ManagedExecutor {
     return executorService.toString();
   }
 
+  /**
+   * @return name of this executor (used for logging)
+   */
   public abstract String getName();
 }
