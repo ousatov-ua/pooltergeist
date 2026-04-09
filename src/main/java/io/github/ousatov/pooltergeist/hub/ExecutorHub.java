@@ -7,8 +7,11 @@ import io.github.ousatov.pooltergeist.hub.executor.VirtualExecutor;
 import io.github.ousatov.pooltergeist.vo.config.ExecHubConfig;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import lombok.Builder;
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Manages executor pools for parallel task execution. Provides IO-bound and CPU-bound executors
@@ -50,8 +53,12 @@ public class ExecutorHub {
    * @param ballroom cpu executor
    * @param dungeon io executor
    */
+  @Builder
   public ExecutorHub(
-      ExecHubConfig config, VirtualExecutor attic, CpuExecutor ballroom, IoExecutor dungeon) {
+      @NonNull ExecHubConfig config,
+      @Nullable VirtualExecutor attic,
+      @Nullable CpuExecutor ballroom,
+      @Nullable IoExecutor dungeon) {
     this.config = config;
     this.attic = attic;
     this.ballroom = ballroom;
