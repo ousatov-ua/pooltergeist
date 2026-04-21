@@ -13,6 +13,10 @@
 
 Pooltergeist separates CPU-bound, IO-bound, and virtual-thread work into purpose-built executor pools, adds bounded-concurrency backpressure via a bulkhead, and provides a high-throughput `TaskManager` for fan-out processing pipelines — all wired up and ready to use in three lines of code.
 
+
+You can use the code in this repo as-is, or fork it and customize it to your needs.
+Please submit any issues or pull requests.
+
 ---
 
 ## Maven
