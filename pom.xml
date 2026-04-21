@@ -11,7 +11,7 @@
 
   <name>pooltergeist</name>
   <description>Java Multithreading Utility Library</description>
-  <url>https://github.com/ousatov-ua/thread-bear</url>
+  <url>https://github.com/ousatov-ua/pooltergeist</url>
 
   <properties>
     <maven.compiler.source>25</maven.compiler.source>
