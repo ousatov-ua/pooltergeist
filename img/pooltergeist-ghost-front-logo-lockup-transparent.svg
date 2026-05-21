@@ -1,0 +1,138 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="512" viewBox="0 0 1280 640" role="img" aria-labelledby="title desc">
+      <title id="title">Pooltergeist</title>
+      <desc id="desc">Transparent Pooltergeist brand lockup with front-facing ghost mark.</desc>
+      
+    <defs>
+      <linearGradient id="wordGradient" x1="270" y1="0" x2="1010" y2="0" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stop-color="#07142F"/>
+        <stop offset="44%" stop-color="#07142F"/>
+        <stop offset="55%" stop-color="#5B52E8"/>
+        <stop offset="100%" stop-color="#15CDB6"/>
+      </linearGradient>
+
+      <linearGradient id="ghostFill" x1="250" y1="42" x2="475" y2="292" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stop-color="#FFFFFF"/>
+        <stop offset="62%" stop-color="#F8FAFF"/>
+        <stop offset="100%" stop-color="#EAFDFA"/>
+      </linearGradient>
+
+      <linearGradient id="ghostShade" x1="245" y1="80" x2="470" y2="270" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0"/>
+        <stop offset="55%" stop-color="#DDE5FF" stop-opacity="0.42"/>
+        <stop offset="100%" stop-color="#CFFAF3" stop-opacity="0.34"/>
+      </linearGradient>
+
+      <linearGradient id="strokeGradient" x1="35" y1="0" x2="480" y2="0" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stop-color="#15CDB6"/>
+        <stop offset="48%" stop-color="#1787EA"/>
+        <stop offset="100%" stop-color="#5B52E8"/>
+      </linearGradient>
+
+      <linearGradient id="haloGradient" x1="120" y1="42" x2="510" y2="280" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stop-color="#15CDB6" stop-opacity="0.30"/>
+        <stop offset="55%" stop-color="#1787EA" stop-opacity="0.20"/>
+        <stop offset="100%" stop-color="#5B52E8" stop-opacity="0.28"/>
+      </linearGradient>
+
+      <linearGradient id="bgGradient" x1="0" y1="0" x2="1280" y2="640" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stop-color="#FFFFFF"/>
+        <stop offset="100%" stop-color="#F8FAFC"/>
+      </linearGradient>
+
+      <radialGradient id="bgGlowMint" cx="21%" cy="82%" r="44%">
+        <stop offset="0%" stop-color="#DFFCF7" stop-opacity="0.95"/>
+        <stop offset="60%" stop-color="#DFFCF7" stop-opacity="0.20"/>
+        <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0"/>
+      </radialGradient>
+
+      <radialGradient id="bgGlowViolet" cx="78%" cy="12%" r="45%">
+        <stop offset="0%" stop-color="#EEF0FF" stop-opacity="0.95"/>
+        <stop offset="65%" stop-color="#EEF0FF" stop-opacity="0.20"/>
+        <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0"/>
+      </radialGradient>
+
+      <filter id="softShadow" x="-35%" y="-35%" width="170%" height="180%">
+        <feDropShadow dx="0" dy="18" stdDeviation="18" flood-color="#5B52E8" flood-opacity="0.14"/>
+      </filter>
+
+      <filter id="ambientShadow" x="-30%" y="-30%" width="160%" height="160%">
+        <feDropShadow dx="0" dy="10" stdDeviation="14" flood-color="#0F172A" flood-opacity="0.07"/>
+      </filter>
+    </defs>
+    
+      
+    <g transform="translate(404.8 70)">
+      
+    <g id="pooltergeist-mark" transform="scale(0.84)" aria-label="Pooltergeist ghost mark">
+      <!-- Soft brand halo; keeps the mark airy on white backgrounds. -->
+      <ellipse cx="351" cy="174" rx="168" ry="123" fill="url(#haloGradient)" opacity="0.22"/>
+      <ellipse cx="350" cy="260" rx="114" ry="24" fill="#5B52E8" opacity="0.08"/>
+
+      <!-- Minimal thread trails: abstract brand cue, not a technical diagram. -->
+      <g stroke="url(#strokeGradient)" stroke-width="15" stroke-linecap="round" opacity="0.92">
+        <line x1="88" y1="107" x2="157" y2="107"/>
+        <line x1="118" y1="148" x2="197" y2="148"/>
+        <line x1="82" y1="188" x2="150" y2="188"/>
+        <line x1="176" y1="188" x2="235" y2="188" opacity="0.82"/>
+      </g>
+      <g fill="url(#strokeGradient)">
+        <circle cx="50" cy="107" r="11"/>
+        <circle cx="86" cy="148" r="9"/>
+        <circle cx="51" cy="188" r="10"/>
+        <circle cx="139" cy="66" r="10" opacity="0.92"/>
+      </g>
+
+      <g filter="url(#softShadow)">
+        <!-- A clear front-facing ghost silhouette: rounded head, sheet body, scalloped hem. -->
+        <path d="M362 38
+                 C295 38 246 91 246 169
+                 L246 232
+                 C246 251 266 261 281 249
+                 C296 237 311 235 324 250
+                 C338 266 361 267 374 250
+                 C386 235 402 236 417 249
+                 C432 261 452 251 452 232
+                 L452 169
+                 C452 91 419 38 362 38Z"
+              fill="url(#ghostFill)" stroke="#BFCBFF" stroke-width="4.5" stroke-linejoin="round"/>
+
+        <!-- Subtle sheet fold for dimensionality without adding clutter. -->
+        <path d="M252 190
+                 C279 161 318 148 360 154
+                 C399 160 429 180 452 207
+                 L452 232
+                 C452 251 432 261 417 249
+                 C402 236 386 235 374 250
+                 C361 267 338 266 324 250
+                 C311 235 296 237 281 249
+                 C266 261 246 251 246 232
+                 L246 209
+                 C246 200 248 194 252 190Z"
+              fill="url(#ghostShade)" opacity="0.54"/>
+
+        <!-- Tiny side waves make it feel like a ghost sheet, but avoid arms/feet noise. -->
+        <path d="M246 188 C226 192 216 210 224 226 C230 238 244 239 257 229"
+              fill="none" stroke="#DDE4FF" stroke-width="13" stroke-linecap="round" opacity="0.76"/>
+        <path d="M452 188 C472 192 482 210 474 226 C468 238 454 239 441 229"
+              fill="none" stroke="#DDE4FF" stroke-width="13" stroke-linecap="round" opacity="0.76"/>
+      </g>
+
+      <!-- Friendly face. Oval eyes + a smile read instantly as a ghost, not an abstract backside. -->
+      <g fill="#4F46E5">
+        <ellipse cx="335" cy="151" rx="15" ry="22"/>
+        <ellipse cx="388" cy="151" rx="15" ry="22"/>
+        <circle cx="340" cy="143" r="5.3" fill="#FFFFFF" opacity="0.62"/>
+        <circle cx="393" cy="143" r="5.3" fill="#FFFFFF" opacity="0.62"/>
+      </g>
+      <path d="M336 188 C350 202 377 202 394 188" fill="none" stroke="#4F46E5" stroke-width="7" stroke-linecap="round"/>
+    </g>
+    
+    </g>
+    <text x="640" y="435" text-anchor="middle"
+          font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif" font-size="118" font-weight="800"
+          letter-spacing="-2.5" fill="url(#wordGradient)">pooltergeist</text>
+    <text x="640" y="512" text-anchor="middle"
+          font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif" font-size="25" font-weight="700"
+          letter-spacing="5.6" fill="#6B7280">CLEAN &amp; RELIABLE CONCURRENCY FOR JAVA</text>
+    
+    </svg>
