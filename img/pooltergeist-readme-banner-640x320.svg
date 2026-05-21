@@ -1,0 +1,131 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="320" viewBox="0 0 1280 640" role="img" aria-labelledby="title desc">
+  <title id="title">Pooltergeist</title>
+  <desc id="desc">Clean logo lockup for the Pooltergeist Java multithreading utility library.</desc>
+
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#FFFFFF"/>
+      <stop offset="0.62" stop-color="#F8FAFC"/>
+      <stop offset="1" stop-color="#F4F7FB"/>
+    </linearGradient>
+    <radialGradient id="glowTeal" cx="50%" cy="50%" r="55%">
+      <stop offset="0" stop-color="#99F6E4" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#99F6E4" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glowViolet" cx="50%" cy="50%" r="60%">
+      <stop offset="0" stop-color="#C7D2FE" stop-opacity="0.60"/>
+      <stop offset="1" stop-color="#C7D2FE" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="ghostBody" x1="84" y1="88" x2="288" y2="292" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFFFFF"/>
+      <stop offset="0.56" stop-color="#EEF2FF"/>
+      <stop offset="1" stop-color="#E0F2FE"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="54" y1="55" x2="316" y2="304" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#14B8A6"/>
+      <stop offset="0.48" stop-color="#6366F1"/>
+      <stop offset="1" stop-color="#7C3AED"/>
+    </linearGradient>
+    <linearGradient id="accentSoft" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#14B8A6" stop-opacity="0.22"/>
+      <stop offset="1" stop-color="#6366F1" stop-opacity="0.18"/>
+    </linearGradient>
+    <filter id="softShadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="18" stdDeviation="18" flood-color="#0F172A" flood-opacity="0.12"/>
+    </filter>
+    <filter id="tinyShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="8" stdDeviation="8" flood-color="#334155" flood-opacity="0.10"/>
+    </filter>
+  </defs>
+
+  <rect width="1280" height="640" fill="url(#bg)"/>
+  <circle cx="1040" cy="82" r="360" fill="url(#glowViolet)" opacity="0.55"/>
+  <circle cx="184" cy="562" r="360" fill="url(#glowTeal)" opacity="0.45"/>
+  <path d="M92 508 C268 438 371 507 529 446 C733 367 818 472 1090 374" fill="none" stroke="#E2E8F0" stroke-width="2" opacity="0.55"/>
+
+  <g transform="translate(104 98) scale(1.12)">
+    
+  <g id="pooltergeist-mark">
+    <rect x="22" y="22" width="316" height="316" rx="86" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1.6" filter="url(#softShadow)"/>
+    <circle cx="180" cy="182" r="118" fill="url(#accentSoft)"/>
+    <circle cx="282" cy="80" r="62" fill="url(#glowViolet)"/>
+    <circle cx="78" cy="292" r="70" fill="url(#glowTeal)"/>
+
+    <!-- A minimal network: three executor rooms, one hub. -->
+    <path d="M180 88 L180 52" stroke="#A5B4FC" stroke-width="3" stroke-linecap="round" stroke-dasharray="6 10"/>
+    <path d="M115 132 C91 111 75 96 55 76" stroke="#A5B4FC" stroke-width="3" stroke-linecap="round" stroke-dasharray="6 10"/>
+    <path d="M246 132 C270 111 290 94 316 72" stroke="#A5B4FC" stroke-width="3" stroke-linecap="round" stroke-dasharray="6 10"/>
+    <circle cx="180" cy="52" r="14" fill="#6366F1"/>
+    <circle cx="55" cy="76" r="11" fill="#14B8A6"/>
+    <circle cx="316" cy="72" r="11" fill="#7C3AED"/>
+
+    <!-- Soft pool base -->
+    <ellipse cx="180" cy="252" rx="99" ry="31" fill="#EEF2FF" opacity="0.88"/>
+
+    <!-- Ghost body -->
+    <path d="M180 82
+             C119 82 73 127 73 188
+             L73 224
+             C73 252 94 272 122 272
+             C139 272 146 257 158 257
+             C171 257 171 288 184 288
+             C197 288 201 257 215 257
+             C228 257 236 272 253 272
+             C281 272 302 252 302 224
+             L302 188
+             C302 127 241 82 180 82 Z"
+          fill="url(#ghostBody)" stroke="#C7D2FE" stroke-width="2.4"/>
+
+    <!-- Gentle translucent facets keep it refined rather than cartoonish. -->
+    <path d="M74 206 C114 160 158 129 216 88 C138 84 73 128 73 188 Z" fill="#FFFFFF" opacity="0.35"/>
+    <path d="M302 206 C266 178 230 159 178 126 C240 115 302 143 302 188 Z" fill="#DBEAFE" opacity="0.35"/>
+
+    <!-- Face: retained just enough personality for the name. -->
+    <circle cx="153" cy="165" r="14" fill="#4F46E5" opacity="0.88"/>
+    <circle cx="211" cy="165" r="14" fill="#4F46E5" opacity="0.88"/>
+    <circle cx="158" cy="160" r="5" fill="#FFFFFF" opacity="0.60"/>
+    <circle cx="216" cy="160" r="5" fill="#FFFFFF" opacity="0.60"/>
+    <path d="M154 202 C170 217 196 217 214 202" fill="none" stroke="#4F46E5" stroke-width="7" stroke-linecap="round"/>
+
+    <!-- Hub signal line -->
+    <path d="M73 224 C47 224 37 210 38 191" fill="none" stroke="#A5B4FC" stroke-width="12" stroke-linecap="round" opacity="0.65"/>
+    <path d="M302 224 C328 224 338 210 337 191" fill="none" stroke="#A5B4FC" stroke-width="12" stroke-linecap="round" opacity="0.65"/>
+
+    <!-- Small velocity marks: thread work entering/leaving without becoming a flowchart. -->
+    <path d="M71 314 H116" stroke="url(#accent)" stroke-width="8" stroke-linecap="round" opacity="0.82"/>
+    <path d="M294 314 H327" stroke="url(#accent)" stroke-width="8" stroke-linecap="round" opacity="0.82"/>
+  </g>
+
+  </g>
+
+  <g transform="translate(510 205)">
+    <text x="0" y="0" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Arial, sans-serif" font-size="82" font-weight="820" letter-spacing="0.5" fill="#0F172A">Pool<tspan fill="#4F46E5">tergeist</tspan></text>
+    <text x="4" y="56" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Arial, sans-serif" font-size="26" font-weight="650" letter-spacing="5.5" fill="#64748B">JAVA 25+ MULTITHREADING LIBRARY</text>
+    <rect x="4" y="84" width="572" height="1.5" rx="0.75" fill="#E2E8F0"/>
+    <text x="4" y="136" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Arial, sans-serif" font-size="27" font-weight="500" fill="#334155">Order for virtual threads, CPU pools, and IO bulkheads.</text>
+
+    <g transform="translate(4 176)">
+      
+    <g>
+      <rect x="0" y="0" width="150" height="42" rx="21" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1.5"/>
+      <circle cx="22" cy="21" r="5.5" fill="#14B8A6"/>
+      <text x="38" y="27" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Arial, sans-serif" font-size="18" font-weight="650" fill="#334155">ExecutorHub</text>
+    </g>
+
+      
+    <g>
+      <rect x="166" y="0" width="176" height="42" rx="21" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1.5"/>
+      <circle cx="188" cy="21" r="5.5" fill="#14B8A6"/>
+      <text x="204" y="27" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Arial, sans-serif" font-size="18" font-weight="650" fill="#334155">Virtual threads</text>
+    </g>
+
+      
+    <g>
+      <rect x="358" y="0" width="164" height="42" rx="21" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1.5"/>
+      <circle cx="380" cy="21" r="5.5" fill="#14B8A6"/>
+      <text x="396" y="27" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Arial, sans-serif" font-size="18" font-weight="650" fill="#334155">TaskManager</text>
+    </g>
+
+    </g>
+  </g>
+</svg>
